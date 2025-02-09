@@ -109,10 +109,18 @@ class GeoServer {
         $city2 = $this->findCityByRussianName($city2Name);
         
         if (!$city1 || !$city2) {
-            return ['error' => 'One or both cities not found'];
+            return [
+                'error' => 'One or both cities not found',
+                'city1_found' => $city1 ? true : false,
+                'city2_found' => $city2 ? true : false
+            ];
         }
         
+        // Определяем какой город севернее
         $northernCity = $city1['latitude'] > $city2['latitude'] ? $city1['name'] : $city2['name'];
+        $latitudeDiff = abs($city1['latitude'] - $city2['latitude']);
+        
+        // Проверяем временные зоны
         $sameTimezone = $city1['timezone'] === $city2['timezone'];
         $timezoneDiff = 0;
         
@@ -124,19 +132,41 @@ class GeoServer {
         }
         
         return [
-            'city1' => $city1,
-            'city2' => $city2,
-            'northern_city' => $northernCity,
-            'same_timezone' => $sameTimezone,
-            'timezone_difference' => $timezoneDiff
+            'city1' => [
+                'name' => $city1['name'],
+                'latitude' => $city1['latitude'],
+                'longitude' => $city1['longitude'],
+                'timezone' => $city1['timezone'],
+                'population' => $city1['population']
+            ],
+            'city2' => [
+                'name' => $city2['name'],
+                'latitude' => $city2['latitude'],
+                'longitude' => $city2['longitude'],
+                'timezone' => $city2['timezone'],
+                'population' => $city2['population']
+            ],
+            'comparison' => [
+                'northern_city' => $northernCity,
+                'latitude_difference_km' => round($latitudeDiff * 111.32, 2), // примерное расстояние в км
+                'same_timezone' => $sameTimezone,
+                'timezone_difference_hours' => $timezoneDiff
+            ]
         ];
     }
     
     private function findCityByRussianName($name) {
         $candidates = [];
         foreach ($this->cities as $city) {
+            // Проверяем основное название
+            if ($city['name'] === $name) {
+                $candidates[] = $city;
+                continue;
+            }
+            
+            // Проверяем альтернативные названия
             $alternateNames = explode(',', $city['alternatenames']);
-            if ($city['name'] === $name || in_array($name, $alternateNames)) {
+            if (in_array($name, $alternateNames)) {
                 $candidates[] = $city;
             }
         }
@@ -145,7 +175,7 @@ class GeoServer {
             return null;
         }
         
-        // Сортировка по населению (по убыванию)
+        // Если несколько городов с одним названием, выбираем с наибольшим населением
         usort($candidates, function($a, $b) {
             return $b['population'] - $a['population'];
         });
@@ -155,16 +185,16 @@ class GeoServer {
     
     // Метод 4: Поиск городов по части названия
     public function searchCities($query) {
-        if (empty($query) || mb_strlen($query) < 2) {
+        if (empty($query) || strlen($query) < 2) {
             return ['error' => 'Query should be at least 2 characters long'];
         }
         
         $results = [];
-        $query = mb_strtolower(trim($query));
+        $query = strtolower(trim($query));
         
         foreach ($this->cities as $city) {
             // Проверяем основное название
-            if (mb_stripos(mb_strtolower($city['name']), $query) === 0) {
+            if (stripos($city['name'], $query) === 0) {
                 $results[] = [
                     'id' => $city['geonameid'],
                     'name' => $city['name'],
@@ -176,7 +206,7 @@ class GeoServer {
             // Проверяем альтернативные названия
             $altNames = explode(',', $city['alternatenames']);
             foreach ($altNames as $altName) {
-                if (mb_stripos(mb_strtolower(trim($altName)), $query) === 0) {
+                if (stripos(trim($altName), $query) === 0) {
                     $results[] = [
                         'id' => $city['geonameid'],
                         'name' => $city['name'],
