@@ -109,18 +109,16 @@ class GeoServer {
         $city2 = $this->findCityByRussianName($city2Name);
         
         if (!$city1 || !$city2) {
-            return [
+            return array(
                 'error' => 'One or both cities not found',
                 'city1_found' => $city1 ? true : false,
                 'city2_found' => $city2 ? true : false
-            ];
+            );
         }
         
-        // Определяем какой город севернее
         $northernCity = $city1['latitude'] > $city2['latitude'] ? $city1['name'] : $city2['name'];
         $latitudeDiff = abs($city1['latitude'] - $city2['latitude']);
         
-        // Проверяем временные зоны
         $sameTimezone = $city1['timezone'] === $city2['timezone'];
         $timezoneDiff = 0;
         
@@ -131,28 +129,28 @@ class GeoServer {
             $timezoneDiff = ($tz1->getOffset($dt) - $tz2->getOffset($dt)) / 3600;
         }
         
-        return [
-            'city1' => [
+        return array(
+            'city1' => array(
                 'name' => $city1['name'],
                 'latitude' => $city1['latitude'],
                 'longitude' => $city1['longitude'],
                 'timezone' => $city1['timezone'],
                 'population' => $city1['population']
-            ],
-            'city2' => [
+            ),
+            'city2' => array(
                 'name' => $city2['name'],
                 'latitude' => $city2['latitude'],
                 'longitude' => $city2['longitude'],
                 'timezone' => $city2['timezone'],
                 'population' => $city2['population']
-            ],
-            'comparison' => [
+            ),
+            'comparison' => array(
                 'northern_city' => $northernCity,
-                'latitude_difference_km' => round($latitudeDiff * 111.32, 2), // примерное расстояние в км
+                'latitude_difference_km' => round($latitudeDiff * 111.32, 2),
                 'same_timezone' => $sameTimezone,
                 'timezone_difference_hours' => $timezoneDiff
-            ]
-        ];
+            )
+        );
     }
     
     private function findCityByRussianName($name) {
