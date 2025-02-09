@@ -1,7 +1,7 @@
 <?php
 
 class GeoServer {
-    private $cities = [];
+    private $cities = array();
     
     public function __construct() {
         $this->loadCities();
@@ -13,7 +13,7 @@ class GeoServer {
         
         $file = fopen('RU.txt', 'r');
         if ($file === false) {
-            die('Error: Unable to open RU.txt file');
+            die('Ош');
         }
 
         while (($line = fgets($file)) !== false) {
@@ -40,7 +40,7 @@ class GeoServer {
     public function getCityById($geonameid) {
         return isset($this->cities[$geonameid]) 
             ? $this->cities[$geonameid] 
-            : ['error' => 'City not found'];
+            : ['error' => 'Город не найден'];
     }
     
     // Метод 2: Получение списка городов с пагинацией
@@ -58,7 +58,7 @@ class GeoServer {
             
             $file = fopen('RU.txt', 'r');
             if ($file === false) {
-                throw new Exception('Cannot open file RU.txt');
+                throw new Exception('Не удалось открыть файл RU.txt');
             }
             
             while (($line = fgets($file)) !== false) {
@@ -103,7 +103,7 @@ class GeoServer {
         
         if (!$city1 || !$city2) {
             return array(
-                'error' => 'One or both cities not found',
+                'error' => 'Один или оба города не найдены',
                 'city1_found' => $city1 ? true : false,
                 'city2_found' => $city2 ? true : false
             );
@@ -125,31 +125,32 @@ class GeoServer {
         }
         
         return array(
-            'city1' => array(
-                'name' => $city1['name'],
-                'latitude' => $city1['latitude'],
-                'longitude' => $city1['longitude'],
-                'timezone' => $city1['timezone'],
-                'population' => $city1['population']
+            'Город1' => array(
+                'Город' => $city1['name'],
+                'Широта' => $city1['latitude'],
+                'Долгота' => $city1['longitude'],
+                'Часовой пояс' => $city1['timezone'],
+                'Население' => $city1['population']
             ),
-            'city2' => array(
-                'name' => $city2['name'],
-                'latitude' => $city2['latitude'],
-                'longitude' => $city2['longitude'],
-                'timezone' => $city2['timezone'],
-                'population' => $city2['population']
+            'Город2' => array(
+                'Город' => $city2['name'],
+                'Широта' => $city2['latitude'], 
+                'Долгота' => $city2['longitude'],
+                'Часовой пояс' => $city2['timezone'],
+                'Население' => $city2['population']
             ),
-            'comparison' => array(
-                'northern_city' => $northernCity,
-                'latitude_difference_km' => round($latitudeDiff * 111.32, 2),
-                'same_timezone' => $sameTimezone,
-                'timezone_difference_hours' => $timezoneDiff
+            'Сравнение' => array(
+                'Северный город' => $northernCity,
+                'Разница широты (км)' => round($latitudeDiff * 111.32, 2),
+                'Тот же часовой пояс' => $sameTimezone,
+                'Разница часового пояса (часы)' => $timezoneDiff
             )
         );
     }
     
+
     private function findCityByRussianName($name) {
-        $candidates = [];
+        $candidates = array();
         foreach ($this->cities as $city) {
             // Проверяем основное название
             if ($city['name'] === $name) {
@@ -168,59 +169,56 @@ class GeoServer {
             return null;
         }
         
-        // Если несколько городов с одним названием, выбираем с наибольшим населением
-        usort($candidates, function($a, $b) {
-            return $b['population'] - $a['population'];
-        });
-        
+        // Используем метод класса для сортировки
+        usort($candidates, array($this, 'sortByPopulation'));
         return $candidates[0];
     }
     
-    // Метод 4: Поиск городов по части названия
+    // Добавляем метод для сортировки
+    private function sortByPopulation($a, $b) {
+        return $b['population'] - $a['population'];
+    }
+    
     public function searchCities($query) {
         if (empty($query) || strlen($query) < 2) {
-            return ['error' => 'Query should be at least 2 characters long'];
+            return array('error' => 'Запрос должен быть не менее 2 символов');
         }
         
-        $results = [];
+        $results = array();
         $query = strtolower(trim($query));
         
         foreach ($this->cities as $city) {
-            // Проверяем основное название
             if (stripos($city['name'], $query) === 0) {
-                $results[] = [
+                $results[] = array(
                     'id' => $city['geonameid'],
                     'name' => $city['name'],
                     'population' => $city['population']
-                ];
+                );
                 continue;
             }
             
-            // Проверяем альтернативные названия
             $altNames = explode(',', $city['alternatenames']);
             foreach ($altNames as $altName) {
                 if (stripos(trim($altName), $query) === 0) {
-                    $results[] = [
+                    $results[] = array(
                         'id' => $city['geonameid'],
                         'name' => $city['name'],
                         'alt_name' => $altName,
                         'population' => $city['population']
-                    ];
+                    );
                     break;
                 }
             }
         }
         
-        // Сортируем результаты по населению (по убыванию)
-        usort($results, function($a, $b) {
-            return $b['population'] - $a['population'];
-        });
+        // Используем тот же метод сортировки
+        usort($results, array($this, 'sortByPopulation'));
         
-        return [
+        return array(
             'query' => $query,
             'found' => count($results),
-            'results' => array_slice($results, 0, 20) // Ограничиваем вывод 20 городами
-        ];
+            'results' => array_slice($results, 0, 20)
+        );
     }
 }
 
