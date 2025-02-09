@@ -82,19 +82,12 @@ class GeoServer {
                 }
             }
             
-            // Получаем общее количество строк в файле
-            $total = $counter;
-            if ($counter < $end) {
-                $total = $counter;
-            }
             
             fclose($file);
             
             return [
                 'page' => $page,
                 'per_page' => $perPage,
-                'total_cities' => $total,
-                'total_pages' => ceil($total / $perPage),
                 'data' => $cities
             ];
             
@@ -116,9 +109,11 @@ class GeoServer {
             );
         }
         
+        // Определяем какой город севернее
         $northernCity = $city1['latitude'] > $city2['latitude'] ? $city1['name'] : $city2['name'];
         $latitudeDiff = abs($city1['latitude'] - $city2['latitude']);
         
+        // Проверяем временные зоны
         $sameTimezone = $city1['timezone'] === $city2['timezone'];
         $timezoneDiff = 0;
         
